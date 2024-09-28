@@ -1,4 +1,5 @@
 import 'package:euler/Controller/euler_controller.dart';
+import 'package:euler/UI/button.dart';
 import 'package:euler/UI/draw_euler.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,15 +26,16 @@ class HomeEuler extends StatelessWidget {
     final graphController = context.watch<GraphController>();
     return Scaffold(
       appBar: AppBar(
-        title: Text(''),
+        title: Text(""),
         backgroundColor: Colors.grey,
         actions: [
-          IconButton(
-            onPressed: () {
-              graphController.renew();
-            },
-            icon: Icon(Icons.refresh), // Cải thiện icon cho rõ nghĩa
-          ),
+          ButtonRow()
+          // IconButton(
+          //   onPressed: () {
+          //     graphController.renew();
+          //   },
+          //   icon: Icon(Icons.refresh), // Cải thiện icon cho rõ nghĩa
+          // ),
         ],
       ),
       body: Row(
@@ -41,7 +43,7 @@ class HomeEuler extends StatelessWidget {
         mainAxisSize: MainAxisSize.max,
         children: [
           Container(
-            width: 100,
+            width: 300,
             color: Colors.grey,
           ),
           Expanded(child: DrawEuler())

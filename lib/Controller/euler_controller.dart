@@ -1,4 +1,6 @@
-import 'package:euler/Modal/euler.dart';
+import 'package:euler/Modal/edge.dart';
+import 'package:euler/Modal/graph.dart';
+import 'package:euler/Modal/vertex.dart';
 import 'package:flutter/material.dart';
 
 class GraphController with ChangeNotifier {
@@ -6,7 +8,7 @@ class GraphController with ChangeNotifier {
   int? startVertexIndex;
   Offset? _drawingStart;
   Offset? _drawingEnd;
-
+  bool isShiftPressed = false;
   int? selectedVertexIndex;
   List<TextEditingController> vertexControllers = [];
 
@@ -15,11 +17,16 @@ class GraphController with ChangeNotifier {
     vertexControllers =
         List.generate(graph.vertices.length, (_) => TextEditingController());
   }
+  void setShift ( bool shift){
+    isShiftPressed=shift;
+    notifyListeners();
+  }
 
   void setVertexName(int index, String name) {
-    graph.vertexNames[index] = name;
+    graph.vertices[index].name = name;
     vertexControllers[index].text = name; // Cập nhật TextEditingController
     notifyListeners();
+
   }
 
   void renew() {
@@ -30,22 +37,22 @@ class GraphController with ChangeNotifier {
   }
 
   void addVertex(Offset position) {
-    graph.vertices.add(position);
+    graph.vertices.add(Vertex(position: position));
     vertexControllers
         .add(TextEditingController()); // Thêm controller mới cho đỉnh
     notifyListeners();
   }
 
   void addEdge(int startIndex, int endIndex) {
-    graph.edges.add([startIndex, endIndex]);
+    graph.edges.add(Egde(u: startIndex, v: endIndex));
     notifyListeners();
   }
 
   void startDrawing(Offset position) {
     for (int i = 0; i < graph.vertices.length; i++) {
-      if ((graph.vertices[i] - position).distance < 20.0) {
+      if ((graph.vertices[i].position - position).distance < 20.0) {
         startVertexIndex = i;
-        _drawingStart = graph.vertices[i];
+        _drawingStart = graph.vertices[i].position;
         print("Bắt đầu vẽ từ đỉnh: $i tại vị trí ${graph.vertices[i]}");
         return;
       }
@@ -66,7 +73,7 @@ class GraphController with ChangeNotifier {
     if (startVertexIndex != null && _drawingEnd != null) {
       int startIndex = startVertexIndex!;
       for (int i = 0; i < graph.vertices.length; i++) {
-        if ((graph.vertices[i] - _drawingEnd!).distance < 50.0 &&
+        if ((graph.vertices[i].position - _drawingEnd!).distance < 50.0 &&
             i != startIndex) {
           print("Vẽ cạnh từ đỉnh $startIndex đến đỉnh $i");
           addEdge(startIndex, i);
@@ -85,20 +92,22 @@ class GraphController with ChangeNotifier {
 
   int? findTappedVertex(Offset position) {
     for (int i = 0; i < graph.vertices.length; i++) {
-      if ((graph.vertices[i] - position).distance < 50) {
+      if ((graph.vertices[i].position - position).distance < 50) {
         return i;
       }
     }
     return null;
   }
 
-  void removeVertex(int index) {
-    graph.vertices.removeAt(index);
-    graph.vertexNames.remove(index);
-    vertexControllers[index].dispose(); // Giải phóng controller khi xóa đỉnh
-    vertexControllers.removeAt(index);
-    graph.edges.removeWhere((edge) => edge.contains(index));
-    notifyListeners();
+  void removeVertex(int? index) {
+    if(index!=null){
+      graph.vertices.removeAt(index!);
+      vertexControllers[index].dispose(); // Giải phóng controller khi xóa đỉnh
+      vertexControllers.removeAt(index);
+      graph.edges.removeWhere((edge) => (edge.v==index || edge.u==index));
+
+    }
+      notifyListeners();
   }
 
   void startMoveVertex(Offset position) {
@@ -107,7 +116,7 @@ class GraphController with ChangeNotifier {
 
   void updateMoveVertex(Offset position) {
     if (selectedVertexIndex != null) {
-      graph.vertices[selectedVertexIndex!] = position;
+      graph.vertices[selectedVertexIndex!].position = position;
       notifyListeners();
     }
   }
