@@ -128,7 +128,7 @@ class _DrawEulerState extends State<DrawEuler> {
 
 class DoThiPainter extends CustomPainter {
   final List<Vertex> vertices;
-  final List<Egde> edges;
+  final List<Edge> edges;
   final Offset? drawingStart;
   final Offset? drawingEnd;
 
@@ -170,16 +170,16 @@ class DoThiPainter extends CustomPainter {
       canvas.drawCircle(vertices[i].position, 20.0, vertexPaint);
       canvas.drawCircle(vertices[i].position, 20.0, edgePaint);
 
-      final textPainter = TextPainter(
-        text: TextSpan(
-          text: vertices[i].name,
-          style: textStyle,
-        ),
-        textAlign: TextAlign.center,
-        textDirection: TextDirection.ltr,
-      );
-      textPainter.layout();
-      textPainter.paint(canvas, vertices[i].position - Offset(textPainter.width / 2, textPainter.height / 2));
+      // final textPainter = TextPainter(
+      //   text: TextSpan(
+      //     text: vertices[i].name,
+      //     style: textStyle,
+      //   ),
+      //   textAlign: TextAlign.center,
+      //   textDirection: TextDirection.ltr,
+      // );
+      // textPainter.layout();
+      // textPainter.paint(canvas, vertices[i].position - Offset(textPainter.width / 2, textPainter.height / 2));
     }
   }
 

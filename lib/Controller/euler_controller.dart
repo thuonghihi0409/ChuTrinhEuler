@@ -4,6 +4,7 @@ import 'package:euler/Modal/vertex.dart';
 import 'package:flutter/material.dart';
 
 class GraphController with ChangeNotifier {
+  int state =1;
   Graph graph = Graph();
   int? startVertexIndex;
   Offset? _drawingStart;
@@ -21,7 +22,10 @@ class GraphController with ChangeNotifier {
     isShiftPressed=shift;
     notifyListeners();
   }
-
+void setState (int n){
+    state=n;
+    notifyListeners();
+}
   void setVertexName(int index, String name) {
     graph.vertices[index].name = name;
     vertexControllers[index].text = name; // Cập nhật TextEditingController
@@ -33,18 +37,28 @@ class GraphController with ChangeNotifier {
     graph = Graph();
     vertexControllers.map((toElement) => {toElement.dispose()});
     vertexControllers.clear(); // Xóa danh sách các controller khi làm mới
+    state=1;
     notifyListeners();
   }
 
   void addVertex(Offset position) {
+
+    // Tạo TextEditingController và đồng bộ name với TextField
+    TextEditingController controller = TextEditingController();
     graph.vertices.add(Vertex(position: position));
-    vertexControllers
-        .add(TextEditingController()); // Thêm controller mới cho đỉnh
-    notifyListeners();
+
+    vertexControllers.add(controller);
+    // Lắng nghe sự thay đổi của TextField và đồng bộ với name của đỉnh
+    controller.addListener(() {
+      graph.vertices[selectedVertexIndex!].name= controller.text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
+    });
+
+    notifyListeners(); // Thông báo thay đổi nếu cần
   }
 
+
   void addEdge(int startIndex, int endIndex) {
-    graph.edges.add(Egde(u: startIndex, v: endIndex));
+    graph.edges.add(Edge(u: startIndex, v: endIndex));
     notifyListeners();
   }
 

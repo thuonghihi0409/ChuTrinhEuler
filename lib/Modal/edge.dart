@@ -1,7 +1,10 @@
 
 import 'package:euler/Modal/vertex.dart';
 
-class Egde {
+class Edge {
   int u,v;
-  Egde({required this.u,required this.v});
+  bool visited=false;
+  Edge({required this.u,required this.v});
+
+
 }

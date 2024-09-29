@@ -1,6 +1,7 @@
 import 'package:euler/Controller/euler_controller.dart';
 import 'package:euler/UI/button.dart';
 import 'package:euler/UI/draw_euler.dart';
+import 'package:euler/UI/left_UI.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -42,10 +43,7 @@ class HomeEuler extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         mainAxisSize: MainAxisSize.max,
         children: [
-          Container(
-            width: 300,
-            color: Colors.grey,
-          ),
+          Feature(),
           Expanded(child: DrawEuler())
         ],
       ),
