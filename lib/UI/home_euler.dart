@@ -26,28 +26,24 @@ class HomeEuler extends StatelessWidget {
   Widget build(BuildContext context) {
     final graphController = context.watch<GraphController>();
     return Scaffold(
-      appBar: AppBar(
-        title: Text(""),
-        backgroundColor: Colors.grey,
-        actions: [
-          ButtonRow()
-          // IconButton(
-          //   onPressed: () {
-          //     graphController.renew();
-          //   },
-          //   icon: Icon(Icons.refresh), // Cải thiện icon cho rõ nghĩa
-          // ),
-        ],
-      ),
-      body: Row(
-        mainAxisAlignment: MainAxisAlignment.start,
-        mainAxisSize: MainAxisSize.max,
+      body: Column(
         children: [
-          Feature(),
-          Expanded(child: DrawEuler())
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [ButtonRow()],
+            ),
+          ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.max,
+              children: [Feature(), Expanded(child: DrawEuler())],
+            ),
+          ),
         ],
       ),
     );
   }
 }
-

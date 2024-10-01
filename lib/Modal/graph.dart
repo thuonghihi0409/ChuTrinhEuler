@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:euler/Modal/vertex.dart';
 import 'package:euler/Modal/edge.dart';
 import 'package:flutter/material.dart';
@@ -7,7 +10,7 @@ class Graph  {
   List<Edge> edges = [];
   List<int> cycle = [];
 
-
+  Graph();
   List<int> getNeighbors(int v) {
     List<int> list= [];
     for(int i=0;i< edges.length; i++){
@@ -95,4 +98,31 @@ class Graph  {
       }
     }
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'vertices': vertices.map((v) => v.toJson()).toList(),
+      'edges': edges.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  void saveGraphToFile(String filename) async {
+    // Chuyển đổi đối tượng Graph thành JSON
+    String jsonString = jsonEncode(toJson());
+    // Ghi JSON vào file
+    final file = File(filename);
+    await file.writeAsString(jsonString);
+    print("Da luu");
+  }
+
+  factory Graph.fromJson(Map<String, dynamic> json) {
+    return Graph()
+      ..vertices = (json['vertices'] as List)
+          .map((vertexJson) => Vertex.fromJson(vertexJson))
+          .toList()
+      ..edges = (json['edges'] as List)
+          .map((edgeJson) => Edge.fromJson(edgeJson))
+          .toList();
+  }
+
 }

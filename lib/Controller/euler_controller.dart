@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:euler/Modal/edge.dart';
 import 'package:euler/Modal/graph.dart';
 import 'package:euler/Modal/vertex.dart';
@@ -45,8 +48,7 @@ void setState (int n){
 
     // Tạo TextEditingController và đồng bộ name với TextField
     TextEditingController controller = TextEditingController();
-    graph.vertices.add(Vertex(position: position));
-
+    graph.vertices.add(Vertex(position: position, name: ""));
     vertexControllers.add(controller);
     // Lắng nghe sự thay đổi của TextField và đồng bộ với name của đỉnh
     controller.addListener(() {
@@ -137,6 +139,33 @@ void setState (int n){
 
   void endMoveVertex() {
     selectedVertexIndex = null;
+  }
+
+  Future<void> readGraphFromFile(String filename) async {
+    try {
+      // Đọc nội dung của file JSON
+      final file = File(filename);
+      String jsonString = await file.readAsString();
+
+      // Giải mã nội dung JSON
+      Map<String, dynamic> jsonMap = jsonDecode(jsonString);
+
+      // Tạo đối tượng Graph từ JSON
+      graph = await Graph.fromJson(jsonMap);
+      print("Da mo file");
+       vertexControllers = [];
+       for(int i=0; i< graph.vertices.length;i++){
+         vertexControllers.add(TextEditingController(text: "${graph.vertices[i].name}"));
+         vertexControllers[i].addListener(() {
+           graph.vertices[selectedVertexIndex!].name= vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
+         });
+
+       }
+     notifyListeners();
+    } catch (e) {
+      print('Lỗi khi đọc file: $e');
+      rethrow;
+    }
   }
 
   // Getter cho điểm bắt đầu và điểm kết thúc khi vẽ
