@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+
 import 'package:euler/Modal/edge.dart';
 import 'package:euler/Modal/graph.dart';
 import 'package:euler/Modal/vertex.dart';
@@ -15,6 +16,7 @@ class GraphController with ChangeNotifier {
   bool isShiftPressed = false;
   int? selectedVertexIndex;
   List<TextEditingController> vertexControllers = [];
+  List<FocusNode> vertexFocusNodes = [];
 
   GraphController() {
     // Khởi tạo các TextEditingController khi tạo controller
@@ -30,10 +32,13 @@ void setState (int n){
     notifyListeners();
 }
   void setVertexName(int index, String name) {
-    graph.vertices[index].name = name;
-    vertexControllers[index].text = name; // Cập nhật TextEditingController
-    notifyListeners();
 
+    vertexControllers[index].addListener((){
+      graph.vertices[selectedVertexIndex!].name= vertexControllers[index].text;
+    });// Cập nhật TextEditingController
+    graph.vertices[index].name = name;
+    vertexControllers[index].text = name;
+    notifyListeners();
   }
 
   void renew() {
@@ -50,9 +55,13 @@ void setState (int n){
     TextEditingController controller = TextEditingController();
     graph.vertices.add(Vertex(position: position, name: ""));
     vertexControllers.add(controller);
+    vertexFocusNodes.add(FocusNode());
+    //selectedVertexIndex=graph.vertices.length;
     // Lắng nghe sự thay đổi của TextField và đồng bộ với name của đỉnh
     controller.addListener(() {
-      graph.vertices[selectedVertexIndex!].name= controller.text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
+      if (selectedVertexIndex != null && selectedVertexIndex! < graph.vertices.length) {
+        graph.vertices[selectedVertexIndex!].name = controller.text;
+      }
     });
 
     notifyListeners(); // Thông báo thay đổi nếu cần
@@ -86,6 +95,7 @@ void setState (int n){
   }
 
   void endDrawing() {
+    selectedVertexIndex=null;
     if (startVertexIndex != null && _drawingEnd != null) {
       int startIndex = startVertexIndex!;
       for (int i = 0; i < graph.vertices.length; i++) {
@@ -117,13 +127,20 @@ void setState (int n){
 
   void removeVertex(int? index) {
     if(index!=null){
-      graph.vertices.removeAt(index!);
-      vertexControllers[index].dispose(); // Giải phóng controller khi xóa đỉnh
+      graph.vertices.removeAt(index);
+      vertexControllers[index].dispose();
+      vertexFocusNodes[index].dispose();
+      vertexFocusNodes.removeAt(index);// Giải phóng controller khi xóa đỉnh
       vertexControllers.removeAt(index);
       graph.edges.removeWhere((edge) => (edge.v==index || edge.u==index));
-
-    }
+      for (int i=0;i<graph.edges.length;i++){
+        if(graph.edges[i].u>index) graph.edges[i].u--;
+        if(graph.edges[i].v>index) graph.edges[i].v--;
+      }
+      selectedVertexIndex=null;
       notifyListeners();
+    }
+
   }
 
   void startMoveVertex(Offset position) {
@@ -144,7 +161,8 @@ void setState (int n){
   Future<void> readGraphFromFile(String filename) async {
     try {
       // Đọc nội dung của file JSON
-      final file = File(filename);
+      final path = 'C:/Users/LVT/euler/data/${filename}';
+      final file = File(path);
       String jsonString = await file.readAsString();
 
       // Giải mã nội dung JSON
@@ -156,6 +174,7 @@ void setState (int n){
        vertexControllers = [];
        for(int i=0; i< graph.vertices.length;i++){
          vertexControllers.add(TextEditingController(text: "${graph.vertices[i].name}"));
+         vertexFocusNodes.add(FocusNode());
          vertexControllers[i].addListener(() {
            graph.vertices[selectedVertexIndex!].name= vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
          });
@@ -165,6 +184,27 @@ void setState (int n){
     } catch (e) {
       print('Lỗi khi đọc file: $e');
       rethrow;
+    }
+  }
+
+  Future<void> saveGraphToFile(String namefile) async {
+    try {
+
+      final path = 'C:/Users/LVT/euler/Data/${namefile}.Json';
+      // Tạo thư mục 'data' nếu chưa tồn tại
+      final dir = Directory('C:/Users/LVT/euler/data');
+      if (!(await dir.exists())) {
+        await dir.create(recursive: true);
+      }
+
+     String graphData = jsonEncode(graph.toJson());
+      // Lưu dữ liệu vào file JSON
+      File file = File(path);
+      await file.writeAsString(graphData, flush: true);
+
+      print('Đã lưu đồ thị vào file: $path');
+    } catch (e) {
+      print('Lỗi khi lưu đồ thị: $e');
     }
   }
 

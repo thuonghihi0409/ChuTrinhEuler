@@ -106,14 +106,7 @@ class Graph  {
     };
   }
 
-  void saveGraphToFile(String filename) async {
-    // Chuyển đổi đối tượng Graph thành JSON
-    String jsonString = jsonEncode(toJson());
-    // Ghi JSON vào file
-    final file = File(filename);
-    await file.writeAsString(jsonString);
-    print("Da luu");
-  }
+
 
   factory Graph.fromJson(Map<String, dynamic> json) {
     return Graph()

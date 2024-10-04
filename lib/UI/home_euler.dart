@@ -1,4 +1,6 @@
-import 'package:euler/Controller/euler_controller.dart';
+import 'dart:math';
+
+import 'package:euler/Controller/graph_controller.dart';
 import 'package:euler/UI/button.dart';
 import 'package:euler/UI/draw_euler.dart';
 import 'package:euler/UI/left_UI.dart';
@@ -28,18 +30,21 @@ class HomeEuler extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [ButtonRow()],
+          Container(
+            color: Colors.greenAccent,
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Buttonicon(),
             ),
           ),
           Expanded(
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               mainAxisSize: MainAxisSize.max,
-              children: [Feature(), Expanded(child: DrawEuler())],
+              children: [
+                Feature(),
+                Expanded(child: DrawEuler())
+              ],
             ),
           ),
         ],
