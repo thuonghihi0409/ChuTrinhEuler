@@ -35,20 +35,34 @@ class Graph  {
 
  // tim chu trinh
   void _findCycle(int current, List<Edge> unusedEdges) {
-    if (unusedEdges[current].visited==false)
+    // Nếu tất cả các cạnh đã được duyệt, ta đã hoàn thành việc tìm chu trình
+    if (unusedEdges.every((edge) => edge.visited)) {
+      return;
+    }
+
+    // Thêm đỉnh hiện tại vào chu trình nếu chưa có trong chu trình
+    if (!cycle.contains(current)) {
       cycle.add(current);
-    unusedEdges[current].visited=true;
-    print("++ ${cycle[cycle.length-1]}");
+      print("++ ${cycle[cycle.length - 1]}");
+    }
+
+    // Duyệt qua các cạnh
     for (Edge edge in unusedEdges) {
+      // Nếu cạnh chưa được duyệt và đỉnh `u` là đỉnh hiện tại
       if (edge.u == current && !edge.visited) {
-        //edge.visited = true;
-        _findCycle(edge.v, unusedEdges);
-      } else if (edge.v == current && !edge.visited) {
-        // edge.visited = true;
-        _findCycle(edge.u, unusedEdges);
+        edge.visited = true;  // Đánh dấu cạnh là đã duyệt
+        _findCycle(edge.v, unusedEdges); // Đệ quy đến đỉnh kề `v`
+        return; // Kết thúc sau khi tìm thấy chu trình tại nhánh này
+      }
+      // Nếu cạnh chưa được duyệt và đỉnh `v` là đỉnh hiện tại
+      else if (edge.v == current && !edge.visited) {
+        edge.visited = true;  // Đánh dấu cạnh là đã duyệt
+        _findCycle(edge.u, unusedEdges); // Đệ quy đến đỉnh kề `u`
+        return; // Kết thúc sau khi tìm thấy chu trình tại nhánh này
       }
     }
   }
+
 
 // giai thuat hierholzer
   List<int> findEulerianCycle() {

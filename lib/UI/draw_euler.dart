@@ -97,9 +97,9 @@ class _DrawEulerState extends State<DrawEuler> {
     for (int i = 0; i < _temp; i++) {
       graphController.vertexFocusNodes[i].addListener(() {
         graphController.selectedVertexIndex=i;
-        graphController.vertexControllers[i].addListener(() {
-          graphController.graph.vertices[i].name= graphController.vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
-        });
+        // graphController.vertexControllers[i].addListener(() {
+        //   graphController.graph.vertices[i].name= graphController.vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
+        // });
       });
 
       vertexWidgets.add(

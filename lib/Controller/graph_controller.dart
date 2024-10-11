@@ -44,7 +44,8 @@ void setState (int n){
   void renew() {
     graph = Graph();
     vertexControllers.map((toElement) => {toElement.dispose()});
-    vertexControllers.clear(); // Xóa danh sách các controller khi làm mới
+    vertexControllers.clear();
+    vertexFocusNodes.clear();// Xóa danh sách các controller khi làm mới
     state=1;
     notifyListeners();
   }
