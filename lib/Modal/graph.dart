@@ -12,10 +12,14 @@ class Graph  {
 
   Graph();
   List<int> getNeighbors(int v) {
-    List<int> list= [];
-    for(int i=0;i< edges.length; i++){
-      if(edges[i].u==v || edges[i].v==v){
-        list.add(i);
+    List<int> list = [];
+
+    for (int i = 0; i < edges.length; i++) {
+      // Kiểm tra xem cạnh có chứa đỉnh v hay không
+      if (edges[i].u == v) {
+        list.add(edges[i].v); // Thêm đỉnh còn lại của cạnh vào danh sách
+      } else if (edges[i].v == v) {
+        list.add(edges[i].u); // Thêm đỉnh còn lại của cạnh vào danh sách
       }
     }
 
@@ -70,7 +74,7 @@ class Graph  {
       return [];
     }
     // Kiểm tra điều kiện Euler: Mỗi đỉnh phải có bậc chẵn
-    if (!hasEulerianCycle() || countConnectedComponents()>1) {
+    if (!hasEulerianCycle() || countConnectedComponents().length>1) {
       print("Đồ thị không có chu trình Euler");
       return [];
     }
@@ -85,33 +89,40 @@ class Graph  {
     return cycle;
   }
 
-  int countConnectedComponents() {
+  List<List<int>> countConnectedComponents() {
     Set<int> visited = {};
-    int connectedComponents = 0;
+    List<List<int>> listComponents = [];
 
     // Duyệt qua tất cả các đỉnh
-    for (int v=0; v< vertices.length;v++) {
+    for (int v = 0; v < vertices.length; v++) {
       if (!visited.contains(v)) {
-        // Nếu đỉnh chưa được thăm, nó thuộc một miền liên thông mới
-        connectedComponents++;
-        // Duyệt DFS để thăm tất cả các đỉnh thuộc miền liên thông này
-        _dfs(v, visited);
+        // Tạo một danh sách mới để lưu các đỉnh trong miền liên thông
+        List<int> component = [];
+
+        // Duyệt DFS và thêm các đỉnh thuộc miền liên thông
+        _dfs(v, visited, component);
+
+        // Thêm miền liên thông vào danh sách
+        listComponents.add(component);
       }
     }
 
-    return connectedComponents;
+    return listComponents;
   }
 
-  // Hàm DFS duyệt qua các đỉnh liên thông với đỉnh hiện tại
-  void _dfs(int current, Set<int> visited) {
+// Hàm DFS để duyệt các đỉnh liên thông với đỉnh hiện tại
+  void _dfs(int current, Set<int> visited, List<int> component) {
     visited.add(current);
+    component.add(current);
 
+    // Duyệt qua các đỉnh láng giềng (neighbor) của đỉnh hiện tại
     for (int neighbor in getNeighbors(current)) {
       if (!visited.contains(neighbor)) {
-        _dfs(neighbor, visited);
+        _dfs(neighbor, visited, component);
       }
     }
   }
+
 
   Map<String, dynamic> toJson() {
     return {

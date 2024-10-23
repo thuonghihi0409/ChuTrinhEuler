@@ -6,9 +6,14 @@ import 'package:euler/Modal/edge.dart';
 import 'package:euler/Modal/graph.dart';
 import 'package:euler/Modal/vertex.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as path;
 
 class GraphController with ChangeNotifier {
+  int isSave =0;
   int state =1;
+  Color colorPaint = Colors.black;
+  var filepath="";
   Graph graph = Graph();
   int? startVertexIndex;
   Offset? _drawingStart;
@@ -23,6 +28,15 @@ class GraphController with ChangeNotifier {
     vertexControllers =
         List.generate(graph.vertices.length, (_) => TextEditingController());
   }
+void setColorPaint (Color color){
+    colorPaint = color;
+    notifyListeners();
+}
+  void setFilePath (String s){
+    filepath=s;
+    notifyListeners();
+  }
+
   void setShift ( bool shift){
     isShiftPressed=shift;
     notifyListeners();
@@ -47,6 +61,7 @@ void setState (int n){
     vertexControllers.clear();
     vertexFocusNodes.clear();// Xóa danh sách các controller khi làm mới
     state=1;
+    selectedVertexIndex=null;
     notifyListeners();
   }
 
@@ -143,6 +158,10 @@ void setState (int n){
     }
 
   }
+  void removeEdge (int index){
+    graph.edges.removeAt(index);
+    notifyListeners();
+  }
 
   void startMoveVertex(Offset position) {
     selectedVertexIndex = findTappedVertex(position);
@@ -159,10 +178,9 @@ void setState (int n){
     selectedVertexIndex = null;
   }
 
-  Future<void> readGraphFromFile(String filename) async {
+  Future<void> readGraphFromFile(String namefile) async {
     try {
-      // Đọc nội dung của file JSON
-      final path = 'C:/Users/LVT/euler/data/${filename}';
+      final path = namefile;
       final file = File(path);
       String jsonString = await file.readAsString();
 
@@ -177,10 +195,12 @@ void setState (int n){
          vertexControllers.add(TextEditingController(text: "${graph.vertices[i].name}"));
          vertexFocusNodes.add(FocusNode());
          vertexControllers[i].addListener(() {
-           graph.vertices[selectedVertexIndex!].name= vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
+           graph.vertices[i].name= vertexControllers[i].text; // Cập nhật tên đỉnh mỗi khi TextField thay đổi
          });
 
        }
+       isSave=1;
+      setFilePath(path);
      notifyListeners();
     } catch (e) {
       print('Lỗi khi đọc file: $e');
@@ -190,22 +210,81 @@ void setState (int n){
 
   Future<void> saveGraphToFile(String namefile) async {
     try {
+      // Lấy thư mục Documents của hệ thống
+      final directory = await getApplicationDocumentsDirectory();
+      final graphDataDirectory = Directory('${directory.path}/GraphData');
 
-      final path = 'C:/Users/LVT/euler/Data/${namefile}.Json';
-      // Tạo thư mục 'data' nếu chưa tồn tại
-      final dir = Directory('C:/Users/LVT/euler/data');
-      if (!(await dir.exists())) {
-        await dir.create(recursive: true);
+      // Tạo thư mục 'GraphData' nếu chưa tồn tại
+      if (!(await graphDataDirectory.exists())) {
+        await graphDataDirectory.create(recursive: true);
       }
 
-     String graphData = jsonEncode(graph.toJson());
-      // Lưu dữ liệu vào file JSON
+      // Đường dẫn tới file JSON
+      final path = '${graphDataDirectory.path}/$namefile.json';
+
+      // Tạo dữ liệu đồ thị dưới dạng JSON
+      String graphData = jsonEncode(graph.toJson());
+
+      // Tạo file JSON trong thư mục Documents
       File file = File(path);
       await file.writeAsString(graphData, flush: true);
-
+      setFilePath(path);
+      isSave=1;
       print('Đã lưu đồ thị vào file: $path');
     } catch (e) {
       print('Lỗi khi lưu đồ thị: $e');
+    }
+  }
+  Future<void> renameGraphFile(String newName) async {
+    try {
+      // Lấy đường dẫn thư mục lưu trữ file
+      final directory = await getApplicationDocumentsDirectory();
+      final graphDataDirectory = Directory('${directory.path}/GraphData');
+
+
+      final newPath = '${graphDataDirectory.path}/$newName.json';
+
+      // Kiểm tra xem file cũ có tồn tại không
+      final oldFile = File(filepath);
+      if (await oldFile.exists()) {
+        // Đổi tên file
+        await oldFile.rename(newPath);
+        setFilePath(newPath);
+        print('Đã đổi tên file thành: $newName');
+      } else {
+        print('File không tồn tại');
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Lỗi khi đổi tên file: $e');
+    }
+  }
+
+
+  Future<List<FileSystemEntity>> getJsonFiles() async {
+    try {
+      // Lấy thư mục Documents của hệ thống
+      final directory = await getApplicationDocumentsDirectory();
+      final graphDataDirectory = Directory('${directory.path}/GraphData');
+
+      // Kiểm tra nếu thư mục tồn tại
+      if (await graphDataDirectory.exists()) {
+        // Lấy danh sách các file trong thư mục
+        List<FileSystemEntity> files = graphDataDirectory.listSync();
+
+        // Lọc các file có phần mở rộng là .json
+        List<FileSystemEntity> jsonFiles = files.where((file) {
+          return file.path.endsWith('.json');
+        }).toList();
+        String fileName = path.basename(jsonFiles[0].path);
+        return jsonFiles; // Trả về danh sách các file JSON
+      } else {
+        print('Thư mục GraphData không tồn tại');
+        return [];
+      }
+    } catch (e) {
+      print('Lỗi khi lấy danh sách file: $e');
+      return [];
     }
   }
 

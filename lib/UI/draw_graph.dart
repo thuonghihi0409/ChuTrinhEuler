@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:euler/Controller/graph_controller.dart';
 import 'package:euler/Modal/edge.dart';
 import 'package:euler/Modal/vertex.dart';
-import 'package:euler/UI/button.dart';
+import 'package:euler/UI/button_and_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -53,6 +53,7 @@ class _DrawEulerState extends State<DrawEuler> {
               }
               graphController.startMoveVertex(details.localPosition);
               _focusNode.requestFocus();
+              if(graphController.isSave==1) graphController.isSave=2;
             },
             onPanStart: (details) {
               if (graphController.isShiftPressed) {
@@ -79,10 +80,13 @@ class _DrawEulerState extends State<DrawEuler> {
               painter: DoThiPainter(
                 vertices: graphController.graph.vertices,
                 edges: graphController.graph.edges,
+                colorPaint: graphController.colorPaint,
                 drawingStart: graphController.drawingStart,
                 drawingEnd: graphController.drawingEnd,
               ),
-              child: Container(),
+              child: Container(
+               // color: Colors.white,
+              ),
             ),
           ),
           ..._buildVertexWidgets(graphController),
@@ -145,10 +149,12 @@ class DoThiPainter extends CustomPainter {
   final List<Edge> edges;
   final Offset? drawingStart;
   final Offset? drawingEnd;
+  final Color colorPaint;
 
   DoThiPainter({
     required this.vertices,
     required this.edges,
+    required this.colorPaint,
     this.drawingStart,
     this.drawingEnd,
   });
@@ -156,7 +162,7 @@ class DoThiPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final edgePaint = Paint()
-      ..color = Colors.black
+      ..color = colorPaint
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2.0;
 
