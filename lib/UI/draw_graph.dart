@@ -170,9 +170,32 @@ class DoThiPainter extends CustomPainter {
       ..color = Colors.white
       ..style = PaintingStyle.fill;
 
+    // Tạo một Map để đếm số cung giữa các đỉnh
+    Map<String, int> edgeCounter = {};
+
     // Vẽ các cạnh
     for (var edge in edges) {
-      canvas.drawLine(vertices[edge.u].position, vertices[edge.v].position, edgePaint);
+      final key = '${edge.u}-${edge.v}';
+      final count = edgeCounter.putIfAbsent(key, () => 0);
+      edgeCounter[key] = count + 1;
+
+      // Tính toán offset cho từng cung
+      double offset = count * 40.0; // Thay đổi giá trị này để điều chỉnh khoảng cách
+
+      // Lấy vị trí của 2 đỉnh
+      Offset start = vertices[edge.u].position;
+      Offset end = vertices[edge.v].position;
+
+      // Tính tọa độ trung điểm và tạo một đường cong
+      final midX = (start.dx + end.dx) / 2;
+      final midY = (start.dy + end.dy) / 2;
+
+      // Vẽ đường cong giữa hai đỉnh
+      final path = Path()
+        ..moveTo(start.dx, start.dy)
+        ..quadraticBezierTo(midX + offset, midY + offset, end.dx, end.dy);
+
+      canvas.drawPath(path, edgePaint);
     }
 
     // Vẽ đường kẻ nối giữa các đỉnh đang được kéo
@@ -184,18 +207,18 @@ class DoThiPainter extends CustomPainter {
     for (int i = 0; i < vertices.length; i++) {
       canvas.drawCircle(vertices[i].position, 20.0, vertexPaint);
       canvas.drawCircle(vertices[i].position, 20.0, edgePaint);
-
-      // final textPainter = TextPainter(
-      //   text: TextSpan(
-      //     text: vertices[i].name,
-      //     style: textStyle,
-      //   ),
-      //   textAlign: TextAlign.center,
-      //   textDirection: TextDirection.ltr,
-      // );
-      // textPainter.layout();
-      // textPainter.paint(canvas, vertices[i].position - Offset(textPainter.width / 2, textPainter.height / 2));
-     }
+    //
+    //   final textPainter = TextPainter(
+    //     text: TextSpan(
+    //       text: vertices[i].name,
+    //       style: TextStyle(color: Colors.black, fontSize: 12),
+    //     ),
+    //     textAlign: TextAlign.center,
+    //     textDirection: TextDirection.ltr,
+    //   );
+    //   textPainter.layout();
+    //   textPainter.paint(canvas, vertices[i].position - Offset(textPainter.width / 2, textPainter.height / 2));
+    }
   }
 
   @override
@@ -206,3 +229,4 @@ class DoThiPainter extends CustomPainter {
         oldDelegate.drawingEnd != drawingEnd;
   }
 }
+

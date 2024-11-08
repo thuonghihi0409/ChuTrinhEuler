@@ -24,6 +24,8 @@ class Buttonicon extends StatelessWidget {
             graphController.renew();
             graphController.isSave = 0;
             graphController.filepath = "";
+            graphController.redoStack = [];
+            graphController.redoStack = [];
           },
         ),
         // Nút Mở file
@@ -38,7 +40,10 @@ class Buttonicon extends StatelessWidget {
           context: context,
           tooltip: "Save",
           icon: Icons.save,
-          onPressed: () => showSaveDialog(context),
+          onPressed: () => {
+            if(graphController.isSave==2) graphController.saveagain()
+            else if (graphController.isSave==0) showSaveDialog(context)
+          },
         ),
         // Nút Đổi tên file
         buildIconButton(
@@ -52,7 +57,7 @@ class Buttonicon extends StatelessWidget {
           context: context,
           tooltip: "Export",
           icon: Icons.fireplace,
-          onPressed: () => showSaveDialog(context),
+          onPressed: () => graphController.importJsonFile(context),
         ),
       ],
     );
@@ -66,13 +71,15 @@ class Buttonicon extends StatelessWidget {
     required void Function() onPressed,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 6.0), // Giảm khoảng cách giữa các nút
+      padding: const EdgeInsets.symmetric(horizontal: 6.0),
+      // Giảm khoảng cách giữa các nút
       child: InkWell(
         borderRadius: BorderRadius.circular(30), // Bo tròn viền nhẹ hơn
         onTap: onPressed,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          height: 48, // Kích thước nút nhỏ hơn
+          height: 48,
+          // Kích thước nút nhỏ hơn
           width: 48,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
@@ -99,7 +106,6 @@ class Buttonicon extends StatelessWidget {
     );
   }
 }
-
 
 Future<void> showSaveDialog(BuildContext context) async {
   GraphController graphController =
@@ -161,12 +167,91 @@ Future<void> showSaveDialog(BuildContext context) async {
               'Lưu',
               style: TextStyle(color: Colors.white), // Màu chữ nút Lưu
             ),
-            onPressed: () {
+            onPressed: () async {
               String fileName = fileNameController.text;
 
-              Navigator.of(context).pop(); // Đóng hộp thoại
-              graphController.saveGraphToFile(fileName); // Gọi hàm lưu file
+              // Đóng hộp thoại
+              int t= await graphController.saveGraphToFile(fileName);
+
+              print("$t");
+              Navigator.of(context).pop();
+              if ( t == 2)
+                _showdialogsamename(
+                    context, graphController);
+               // Gọi hàm lưu file
             },
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<void> _showdialogsamename(
+    BuildContext context, GraphController graphcontroller) async {
+  final TextEditingController textController = TextEditingController();
+
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0), // Bo góc hộp thoại
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.amber), // Biểu tượng đổi tên
+            SizedBox(width: 10), // Khoảng cách giữa biểu tượng và tiêu đề
+            Text(
+              'Thông báo',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent, // Màu sắc tiêu đề
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min, // Giới hạn chiều cao của content
+          children: [
+            Text(
+              "Tên đồ thị đã tồn tại ! Vui lòng đặt tên khác.",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red, // Màu chữ nút Hủy
+            ),
+            child: Text('Hủy'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (textController.text.isNotEmpty) {
+                // Gọi hàm đổi tên file
+                graphcontroller.renameGraphFile(textController.text);
+              }
+              Navigator.of(context).pop();
+              showSaveDialog(context);// Đóng hộp thoại sau khi đổi tên
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              // Màu nền nút Đổi tên
+              foregroundColor: Colors.white,
+              // Màu chữ nút Đổi tên
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              // Kích thước nút
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8), // Bo góc nút
+              ),
+            ),
+            child: Text('Đổi tên'),
           ),
         ],
       );
@@ -245,7 +330,12 @@ class ButtonRow extends StatelessWidget {
         ),
         CustomButton(
           text: 'Undo',
-          onPressed: () => _onButtonPressed('Undo'),
+          onPressed: () => {graphController.undo()},
+          color: Colors.blueAccent[100]!,
+        ),
+        CustomButton(
+          text: 'Redo',
+          onPressed: () => {graphController.redo()},
           color: Colors.blueAccent[100]!,
         ),
         CustomButton(
@@ -254,7 +344,9 @@ class ButtonRow extends StatelessWidget {
             if (graphController.colorPaint != Colors.red)
               {graphController.setColorPaint(Colors.red)}
           },
-          color: graphController.colorPaint==Colors.red ? Colors.red[200]! : Colors.blueAccent[100]!, // Màu đỏ nhẹ
+          color: graphController.colorPaint == Colors.red
+              ? Colors.red[200]!
+              : Colors.blueAccent[100]!, // Màu đỏ nhẹ
         ),
         CustomButton(
           text: 'Black',
@@ -262,7 +354,9 @@ class ButtonRow extends StatelessWidget {
             if (graphController.colorPaint != Colors.black)
               {graphController.setColorPaint(Colors.black)}
           },
-          color: graphController.colorPaint==Colors.black ? Colors.black45 : Colors.blueAccent[100]! , // Màu đen xám
+          color: graphController.colorPaint == Colors.black
+              ? Colors.black45
+              : Colors.blueAccent[100]!, // Màu đen xám
         ),
       ],
     );
@@ -516,7 +610,8 @@ class ResultEuler extends StatelessWidget {
   }
 }
 
-Future<void> showRenameDialog(BuildContext context, GraphController graphcontroller) async {
+Future<void> showRenameDialog(
+    BuildContext context, GraphController graphcontroller) async {
   final TextEditingController textController = TextEditingController();
 
   return showDialog(
@@ -549,15 +644,18 @@ Future<void> showRenameDialog(BuildContext context, GraphController graphcontrol
                 hintText: "Nhập tên mới cho file",
                 border: OutlineInputBorder(), // Khung viền ô nhập
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blueAccent), // Màu viền khi focus
+                  borderSide: BorderSide(
+                      color: Colors.blueAccent), // Màu viền khi focus
                 ),
               ),
-              autofocus: true, // Tự động focus vào ô nhập liệu khi hộp thoại xuất hiện
+              autofocus:
+                  true, // Tự động focus vào ô nhập liệu khi hộp thoại xuất hiện
             ),
             SizedBox(height: 10), // Khoảng cách giữa ô nhập liệu và chú thích
             Text(
               '* Không thay đổi phần mở rộng .json',
-              style: TextStyle(color: Colors.grey, fontSize: 12), // Chú thích nhỏ
+              style:
+                  TextStyle(color: Colors.grey, fontSize: 12), // Chú thích nhỏ
             ),
           ],
         ),
@@ -580,9 +678,12 @@ Future<void> showRenameDialog(BuildContext context, GraphController graphcontrol
               Navigator.of(context).pop(); // Đóng hộp thoại sau khi đổi tên
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blueAccent, // Màu nền nút Đổi tên
-              foregroundColor: Colors.white, // Màu chữ nút Đổi tên
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Kích thước nút
+              backgroundColor: Colors.blueAccent,
+              // Màu nền nút Đổi tên
+              foregroundColor: Colors.white,
+              // Màu chữ nút Đổi tên
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              // Kích thước nút
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8), // Bo góc nút
               ),
@@ -594,4 +695,59 @@ Future<void> showRenameDialog(BuildContext context, GraphController graphcontrol
     },
   );
 }
+Future showdialogimportfail(BuildContext context,){
+  return showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(15.0), // Bo góc hộp thoại
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.amber), // Biểu tượng đổi tên
+            SizedBox(width: 10), // Khoảng cách giữa biểu tượng và tiêu đề
+            Text(
+              'Thông báo',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent, // Màu sắc tiêu đề
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min, // Giới hạn chiều cao của content
+          children: [
+            Text(
+              "Lỗi không thể Import file !!!.",
+              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
+            ),
+          ],
+        ),
+        actions: <Widget>[
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blueAccent,
+              // Màu nền nút Đổi tên
+              foregroundColor: Colors.white,
+              // Màu chữ nút Đổi tên
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              // Kích thước nút
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8), // Bo góc nút
+              ),
+            ),
+            child: Text('Oke'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
 

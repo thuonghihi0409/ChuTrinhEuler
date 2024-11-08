@@ -4,13 +4,17 @@ import 'dart:io';
 import 'package:euler/Modal/vertex.dart';
 import 'package:euler/Modal/edge.dart';
 import 'package:flutter/material.dart';
-
 class Graph  {
   List<Vertex> vertices = [];
   List<Edge> edges = [];
   List<int> cycle = [];
 
   Graph();
+  Graph.from(Graph other) {
+    vertices = other.vertices.map((v) => Vertex.from(v)).toList();
+    edges = other.edges.map((e) => Edge.from(e)).toList();
+    cycle = List<int>.from(other.cycle); // Sao chép danh sách chu trình
+  }
   List<int> getNeighbors(int v) {
     List<int> list = [];
 

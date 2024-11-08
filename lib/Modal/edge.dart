@@ -5,6 +5,12 @@ class Edge {
   int u,v;
   bool visited=false;
   Edge({required this.u,required this.v});
+  factory Edge.from(Edge other) {
+    return Edge(
+      u: other.u,
+      v: other.v,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {

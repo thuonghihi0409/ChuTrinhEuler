@@ -86,6 +86,9 @@ class _HomeEulerState extends State<HomeEuler> with WindowListener {
       if(graphController.isSave==0 && graphController.graph.vertices.length<=0 )
         windowManager.destroy();
       _showSaveDialog(context, graphController);
+      if(graphController.isSave==2){
+        graphController.saveagain();
+      }
       if (graphController.isSave == 1) {
         windowManager.destroy(); // Cho phép đóng cửa sổ
       }
