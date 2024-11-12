@@ -17,7 +17,6 @@ class Graph  {
   }
   List<int> getNeighbors(int v) {
     List<int> list = [];
-
     for (int i = 0; i < edges.length; i++) {
       // Kiểm tra xem cạnh có chứa đỉnh v hay không
       if (edges[i].u == v) {

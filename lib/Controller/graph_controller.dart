@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:docx_template/docx_template.dart';
 import 'package:euler/Modal/edge.dart';
 import 'package:euler/Modal/graph.dart';
 import 'package:euler/Modal/vertex.dart';
 import 'package:euler/UI/button_and_dialog.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_archive/flutter_archive.dart';
+import 'package:flutter_file_dialog/flutter_file_dialog.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
 
@@ -113,7 +117,11 @@ class GraphController with ChangeNotifier {
     vertexControllers =
         List.generate(graph.vertices.length, (_) => TextEditingController());
   }
-
+  void cloneGraph (){
+    filepath="";
+    isSave=0;
+    notifyListeners();
+  }
 
   void resetUI (){
     notifyListeners();
@@ -342,6 +350,32 @@ class GraphController with ChangeNotifier {
     }
   }
 
+  Future<int> deleteGraphFile(String namefile) async {
+    try {
+      // Lấy thư mục Documents của hệ thống
+      // final directory = await getApplicationDocumentsDirectory();
+      // final graphDataDirectory = Directory('${directory.path}/GraphData');
+      //
+      // // Đường dẫn tới file JSON cần xóa
+      final filePath = namefile;
+      final file = File(filePath);
+
+      // Kiểm tra file có tồn tại không
+      if (await file.exists()) {
+        await file.delete();
+        print('Đã xóa file: $filePath');
+        return 1; // Xóa thành công
+      } else {
+        print('File không tồn tại: $filePath');
+        return 2; // File không tồn tại
+      }
+    } catch (e) {
+      print('Lỗi khi xóa file: $e');
+      return 0; // Lỗi khi xóa file
+    }
+  }
+
+
   Future<int> saveagain() async {
     try {
       // Tạo dữ liệu đồ thị dưới dạng JSON
@@ -428,12 +462,6 @@ class GraphController with ChangeNotifier {
       File file = File(result.files.single.path!);
       // Đọc nội dung tệp JSON
       String content = await file.readAsString();
-      // Bạn có thể xử lý dữ liệu JSON tại đây
-      // Map<String, dynamic> data = json.decode(content);
-      // if (!(data.containsKey("vertices"))) {
-      //   showdialogimportfail(context);
-      // }
-
       try {
         Map<String, dynamic> data = json.decode(content);
         graph = await Graph.fromJson(data);
@@ -459,6 +487,101 @@ class GraphController with ChangeNotifier {
       print("Không có tệp nào được chọn.");
     }
   }
+  Future<void> exportToFile(BuildContext context) async {
+    String result = "${graph.vertices.length} ${graph.edges.length}\n";
+    for(Edge edge in graph.edges){
+      result=result+ "${graph.vertices[edge.u].name} ${graph.vertices[edge.v].name}\n";
+    }
+    if (graph.findEulerianCycle().isEmpty) {
+      result = result + "Không tồn tại chu trình Euler\n";
+      result = result +"Đồ thị có ${graph.countConnectedComponents().length} miền liên thông:\n";
+      for(List<int> list in graph.countConnectedComponents()){
+        String s = "[";
+        for (int a in list) {
+          s += graph.vertices[a].name + ",";
+        }
+        if (s.length > 1) {
+          s = s.substring(0, s.length - 1); // Loại bỏ dấu phẩy cuối cùng
+        }
+        s += "]\n";
+        result= result+s;
+      }
+
+    } else {
+      result = result + "Chu Trình Euler: \n";
+      String s = "";
+      for (int i in graph.findEulerianCycle()) {
+        s += "${graph.vertices[i].name} -> ";
+      }
+      s +=
+      "${graph.vertices[graph.findEulerianCycle()[0]].name}";
+      result= result+ s;
+    }
+    print("hihi");
+
+    // Mở hộp thoại cho phép người dùng chọn thư mục lưu tệp
+    String? directoryPath = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Chọn thư mục lưu kết quả',
+    );
+    if (directoryPath != null) {
+      // Mở hộp thoại cho phép người dùng nhập tên tệp
+      String? fileName = await showDialog<String>(
+        context: context,
+        builder: (BuildContext context) {
+          String tempFileName = '';
+          return AlertDialog(
+            title: Text('Nhập tên tệp'),
+            content: TextField(
+              autofocus: true,
+              decoration: InputDecoration(hintText: 'Nhập tên tệp'),
+              onChanged: (value) {
+                tempFileName = value;  // Lưu tên tệp trong khi người dùng nhập
+              },
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Đóng nếu không nhập tên
+                },
+                child: Text("Hủy"),
+              ),
+              TextButton(
+                onPressed: () async {
+                  // Kiểm tra xem tệp đã tồn tại chưa
+                  final filePath = '$directoryPath/$tempFileName.txt';
+                  final file = File(filePath);
+                  if (await file.exists()) {
+                    // Nếu tệp đã tồn tại, yêu cầu người dùng nhập lại tên
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Tệp đã tồn tại, vui lòng chọn tên khác')),
+                    );
+                  } else {
+                    Navigator.of(context).pop(tempFileName); // Đóng và trả lại tên tệp
+                  }
+                },
+                child: Text("OK"),
+              ),
+            ],
+          );
+        },
+      );
+
+      // Nếu người dùng đã nhập tên tệp
+      if (fileName != null && fileName.isNotEmpty) {
+        final filePath = '$directoryPath/$fileName.txt';  // Đặt tên tệp mặc định là .txt
+
+        final file = File(filePath);
+        // Lưu kết quả vào tệp đã chọn
+        await file.writeAsBytes(utf8.encode(result));
+
+        // Thông báo thành công
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Đã lưu kết quả vào tệp!')),
+        );
+      }
+    }
+  }
+
 
   // Getter cho điểm bắt đầu và điểm kết thúc khi vẽ
   Offset? get drawingStart => _drawingStart;

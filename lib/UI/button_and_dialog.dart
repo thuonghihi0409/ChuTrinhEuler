@@ -41,8 +41,10 @@ class Buttonicon extends StatelessWidget {
           tooltip: "Save",
           icon: Icons.save,
           onPressed: () => {
-            if(graphController.isSave==2) graphController.saveagain()
-            else if (graphController.isSave==0) showSaveDialog(context)
+            if (graphController.isSave == 2)
+              graphController.saveagain()
+            else if (graphController.isSave == 0)
+              showSaveDialog(context)
           },
         ),
         // Nút Đổi tên file
@@ -52,10 +54,22 @@ class Buttonicon extends StatelessWidget {
           icon: Icons.drive_file_rename_outline,
           onPressed: () => showRenameDialog(context, graphController),
         ),
+        buildIconButton(
+          context: context,
+          tooltip: "Clone",
+          icon: Icons.copy,
+          onPressed: () => confirmCloneGraph(context, graphController),
+        ),
+        buildIconButton(
+          context: context,
+          tooltip: "Delete",
+          icon: Icons.delete_forever,
+          onPressed: () => showDeleteDialog(context),
+        ),
         // Nút Xuất file
         buildIconButton(
           context: context,
-          tooltip: "Export",
+          tooltip: "Import",
           icon: Icons.fireplace,
           onPressed: () => graphController.importJsonFile(context),
         ),
@@ -107,6 +121,180 @@ class Buttonicon extends StatelessWidget {
   }
 }
 
+Future<void> confirmDeleteGraphFile(BuildContext context, String namefile,
+    GraphController graphcontroller) async {
+  bool? confirm = await showDialog<bool>(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Xác nhận xóa'),
+        content: Text('Bạn có chắc chắn muốn xóa file "$namefile.json"?'),
+        actions: [
+          TextButton(
+            child: Text('Hủy'),
+            onPressed: () {
+              Navigator.of(context).pop(false); // Trả về false
+            },
+          ),
+          TextButton(
+            child: Text('Xóa'),
+            onPressed: () {
+              Navigator.of(context).pop(true); // Trả về true
+            },
+          ),
+        ],
+      );
+    },
+  );
+  if (confirm!) {
+    // Gọi hàm xóa file nếu người dùng xác nhận
+    int result = await graphcontroller.deleteGraphFile(namefile);
+    if (result == 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Xóa file thành công!')),
+      );
+    } else if (result == 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('File không tồn tại!')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Xóa file thất bại!')),
+      );
+    }
+  } else {
+    print('Người dùng đã hủy xóa file');
+  }
+}
+
+Future<void> showDeleteDialog(BuildContext context) async {
+  final graphController = Provider.of<GraphController>(context, listen: false);
+  final temp = await graphController.getJsonFiles();
+
+  // Khởi tạo TextEditingController để quản lý input tìm kiếm
+  TextEditingController searchController = TextEditingController();
+  // Tạo một danh sách các file hiện tại để lọc
+  List<FileSystemEntity> filteredFiles = List.from(temp);
+
+  showDialog(
+    context: context,
+    builder: (BuildContext context1) {
+      return StatefulBuilder(
+        builder: (context1, setState) {
+          return AlertDialog(
+            title: Text(
+              "Xóa đồ thị",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Thêm TextField để nhập tên file tìm kiếm
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: "Tìm kiếm theo tên file...",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Lọc danh sách file dựa trên input tìm kiếm
+                    setState(() {
+                      filteredFiles = temp.where((file) {
+                        final filename =
+                            file.path.split('/').last.toLowerCase();
+                        return filename.contains(value.toLowerCase());
+                      }).toList();
+                    });
+                  },
+                ),
+                SizedBox(height: 10),
+                // Giới hạn chiều cao và thêm ListView.builder
+                Container(
+                  width: 600,
+                  height: 350,
+                  child: filteredFiles.isEmpty
+                      ? Center(child: Text("Không tìm thấy file nào"))
+                      : ListView.builder(
+                          itemCount: filteredFiles.length,
+                          itemBuilder: (context1, index) {
+                            final file = filteredFiles[index];
+                            return ListTile(
+                              title: Text(
+                                file.path.split('/').last,
+                                style: TextStyle(
+                                    fontSize: 18, color: Colors.black87),
+                              ),
+                              leading: Icon(Icons.file_present,
+                                  color: Colors.blueAccent),
+                              onTap: () {
+                                Navigator.of(context1).pop();
+                                confirmDeleteGraphFile(
+                                    context, file.path, graphController);
+                              },
+                              trailing: Icon(Icons.delete),
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                  "Đóng",
+                  style: TextStyle(fontSize: 18, color: Colors.redAccent),
+                ),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            backgroundColor: Colors.white,
+          );
+        },
+      );
+    },
+  );
+}
+
+Future<void> confirmCloneGraph(BuildContext context,
+    GraphController graphcontroller) async {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Xác nhận clone'),
+        content: Text(
+            'Bạn có chắc chắn muốn clone đồ thị "${graphcontroller.filepath.split("/").last}"?'),
+        actions: [
+          TextButton(
+            child: Text('Hủy'),
+            onPressed: () {
+              Navigator.of(context).pop(false); // Trả về false
+            },
+          ),
+          TextButton(
+            child: Text('Clone'),
+            onPressed: () {
+              graphcontroller.cloneGraph();
+              Navigator.of(context).pop(true); // Trả về true
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
 Future<void> showSaveDialog(BuildContext context) async {
   GraphController graphController =
       Provider.of<GraphController>(context, listen: false);
@@ -171,14 +359,12 @@ Future<void> showSaveDialog(BuildContext context) async {
               String fileName = fileNameController.text;
 
               // Đóng hộp thoại
-              int t= await graphController.saveGraphToFile(fileName);
+              int t = await graphController.saveGraphToFile(fileName);
 
               print("$t");
               Navigator.of(context).pop();
-              if ( t == 2)
-                _showdialogsamename(
-                    context, graphController);
-               // Gọi hàm lưu file
+              if (t == 2) _showdialogsamename(context, graphController);
+              // Gọi hàm lưu file
             },
           ),
         ],
@@ -217,7 +403,8 @@ Future<void> _showdialogsamename(
           children: [
             Text(
               "Tên đồ thị đã tồn tại ! Vui lòng đặt tên khác.",
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
+              style: TextStyle(
+                  fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
             ),
           ],
         ),
@@ -238,7 +425,7 @@ Future<void> _showdialogsamename(
                 graphcontroller.renameGraphFile(textController.text);
               }
               Navigator.of(context).pop();
-              showSaveDialog(context);// Đóng hộp thoại sau khi đổi tên
+              showSaveDialog(context); // Đóng hộp thoại sau khi đổi tên
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blueAccent,
@@ -409,61 +596,102 @@ Future<void> showListDialog(BuildContext context) async {
   final graphController = Provider.of<GraphController>(context, listen: false);
   final temp = await graphController.getJsonFiles();
 
+  // Tạo TextEditingController để quản lý input tìm kiếm
+  TextEditingController searchController = TextEditingController();
+  // Danh sách file hiện tại và danh sách sau khi tìm kiếm
+  List<FileSystemEntity> filteredFiles = List.from(temp);
+
   showDialog(
     context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text(
-          "Chọn một Đồ Thị",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.blueAccent, // Đổi màu tiêu đề
-          ),
-        ),
-        content: Container(
-          width: 600,
-          height: 400, // Giới hạn chiều cao để có thanh cuộn
-          child: ListView.builder(
-            itemCount: temp.length,
-            itemBuilder: (context, index) {
-              final file = temp[index];
-              return ListTile(
-                title: Text(
-                  file.path.split('/').last, // Chỉ hiển thị tên file
-                  style: TextStyle(fontSize: 18, color: Colors.black87),
-                ),
-                leading: Icon(Icons.file_present, color: Colors.blueAccent),
-                onTap: () {
-                  graphController.readGraphFromFile(file.path);
-                  graphController.isSave = 1;
-                  Navigator.of(context).pop(); // Đóng dialog
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => HomeEuler(),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Đóng dialog khi nhấn nút Đóng
-            },
-            child: Text(
-              "Đóng",
-              style: TextStyle(fontSize: 18, color: Colors.redAccent),
+    builder: (BuildContext context1) {
+      return StatefulBuilder(
+        builder: (context1, setState) {
+          return AlertDialog(
+            title: Text(
+              "Chọn một Đồ Thị",
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: Colors.blueAccent,
+              ),
             ),
-          ),
-        ],
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10), // Bo tròn góc của dialog
-        ),
-        backgroundColor: Colors.white, // Nền trắng cho hộp thoại
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Thêm TextField để nhập tên file tìm kiếm
+                TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText: "Tìm kiếm theo tên file...",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onChanged: (value) {
+                    // Lọc danh sách file theo input tìm kiếm
+                    setState(() {
+                      filteredFiles = temp.where((file) {
+                        final filename =
+                            file.path.split('/').last.toLowerCase();
+                        return filename.contains(value.toLowerCase());
+                      }).toList();
+                    });
+                  },
+                ),
+                SizedBox(height: 10),
+                // Giới hạn chiều cao và thêm ListView.builder
+                Container(
+                  width: 600,
+                  height: 350,
+                  child: filteredFiles.isEmpty
+                      ? Center(child: Text("Không tìm thấy file nào"))
+                      : ListView.builder(
+                          itemCount: filteredFiles.length,
+                          itemBuilder: (context1, index) {
+                            final file = filteredFiles[index];
+                            return ListTile(
+                              title: Text(
+                                file.path.split('/').last,
+                                style: TextStyle(
+                                    fontSize: 18, color: Colors.black87),
+                              ),
+                              leading: Icon(Icons.file_present,
+                                  color: Colors.blueAccent),
+                              onTap: () {
+                                graphController.readGraphFromFile(file.path);
+                                graphController.isSave = 1;
+                                Navigator.of(context1).pop(); // Đóng dialog
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => HomeEuler(),
+                                  ),
+                                );
+                              },
+                            );
+                          },
+                        ),
+                ),
+              ],
+            ),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Đóng dialog khi nhấn nút Đóng
+                },
+                child: Text(
+                  "Đóng",
+                  style: TextStyle(fontSize: 18, color: Colors.redAccent),
+                ),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            backgroundColor: Colors.white,
+          );
+        },
       );
     },
   );
@@ -474,7 +702,7 @@ void showResultDialog(BuildContext context) {
 
   showDialog(
     context: context,
-    builder: (BuildContext context) {
+    builder: (BuildContext context1) {
       return AlertDialog(
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20), // Cạnh bo tròn
@@ -484,19 +712,29 @@ void showResultDialog(BuildContext context) {
           style: TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
-            color: Colors.blueAccent, // Màu tiêu đề
+            color: Colors.blueAccent,
           ),
         ),
-        content: ResultEuler(),
+        content: ResultEuler(), // Hiển thị kết quả Euler ở đây
         actions: <Widget>[
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop(); // Đóng dialog
+            onPressed: () async {
+              Navigator.of(context1).pop();
+              await graphController.exportToFile(context); // Đóng dialog
+            },
+            child: Text(
+              "Export",
+              style: TextStyle(fontSize: 18, color: Colors.blueAccent),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.of(context1).pop();
+              // Đóng dialog
             },
             child: Text(
               "Đóng",
-              style:
-                  TextStyle(fontSize: 18, color: Colors.redAccent), // Nút đóng
+              style: TextStyle(fontSize: 18, color: Colors.redAccent),
             ),
           ),
         ],
@@ -695,7 +933,10 @@ Future<void> showRenameDialog(
     },
   );
 }
-Future showdialogimportfail(BuildContext context,){
+
+Future showdialogimportfail(
+  BuildContext context,
+) {
   return showDialog(
     context: context,
     builder: (BuildContext context) {
@@ -722,7 +963,8 @@ Future showdialogimportfail(BuildContext context,){
           children: [
             Text(
               "Lỗi không thể Import file !!!.",
-              style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
+              style: TextStyle(
+                  fontSize: 25, fontWeight: FontWeight.bold, color: Colors.red),
             ),
           ],
         ),
@@ -749,5 +991,3 @@ Future showdialogimportfail(BuildContext context,){
     },
   );
 }
-
-
